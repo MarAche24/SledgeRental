@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SledgeRental.Data;
 
@@ -11,9 +12,11 @@ using SledgeRental.Data;
 namespace SledgeRental.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250521211018_SledgekindDataMigration")]
+    partial class SledgekindDataMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,15 +50,6 @@ namespace SledgeRental.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "1",
-                            ConcurrencyStamp = "1",
-                            Name = "Staff",
-                            NormalizedName = "STAFF"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -272,7 +266,7 @@ namespace SledgeRental.Migrations
 
                     b.HasIndex("SledgeId");
 
-                    b.ToTable("Reservations", (string)null);
+                    b.ToTable("Reservations");
                 });
 
             modelBuilder.Entity("SledgeRental.Data.Models.Sledge", b =>
@@ -298,7 +292,7 @@ namespace SledgeRental.Migrations
 
                     b.HasIndex("SledgeKindId");
 
-                    b.ToTable("Sledges", (string)null);
+                    b.ToTable("Sledges");
                 });
 
             modelBuilder.Entity("SledgeRental.Data.Models.SledgeKind", b =>
@@ -316,7 +310,7 @@ namespace SledgeRental.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SledgeKinds", (string)null);
+                    b.ToTable("SledgeKinds");
 
                     b.HasData(
                         new

@@ -1,0 +1,50 @@
+﻿@page "/Reservations"
+@using Microsoft.AspNetCore.Authorization
+@using SledgeRental.Data
+@using SledgeRental.Data.Models.Views
+
+@inject ApplicationDbContext dbContext
+
+@attribute [Authorize(Roles = "Staff")]
+
+<h3>Sledges</h3>
+
+<div class="row">
+    <div class="col-md-8">
+        <table class="table table-bordered table-striped">
+            <tr class="border-1 bg-dark bg-opacity-25">
+                <th text-center>Datum</th>
+                <th text-center>Startzeit</th>
+                <th text-center>Endzeit</th>
+                <th text-center>Kunde</th>
+                <th text-center>Schlitten</th>
+                <th text-center>Schlittenkategorie</th>
+            </tr>
+            @foreach(ReservationInfo reservation in ReservationsList)
+            {
+                <tr class="border-1">
+                    <td class="border-1">@reservation.ReservationDate</td>
+                    <td class="border-1 text-center">@reservation.StartTime</td>
+                    <td class="border-1 text-center">@reservation.EndTime</td>
+                    <td class="border-1 text-center">@reservation.CustomerName</td>
+                    <td class="border-1">@reservation.SledgeNumber</td>
+                    <td class="border-1 text-center">@reservation.SledgeKind</td>
+                </tr>   
+            }
+        </table>
+    </div>
+</div>
+
+
+@code {
+    private List<ReservationInfo> ReservationsList { get; set; } = [];
+
+
+    protected override void OnInitialized()
+    {
+        // TODO: Order by date then by time
+        ReservationsList = dbContext.ReservationInfos.ToList();
+
+        base.OnInitialized();
+    }
+}

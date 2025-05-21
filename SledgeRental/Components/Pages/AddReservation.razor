@@ -1,0 +1,36 @@
+﻿@page "/Sledges/Add"
+@using Microsoft.AspNetCore.Authorization
+@using SledgeRental.Data
+
+@inject ApplicationDbContext dbContext
+@inject NavigationManager navigationManager
+
+@attribute [Authorize(Roles = "Staff")]
+
+<h3>Schlitten Reservieren</h3>
+
+<div class="row">
+    <div class="col-md-4">
+		<EditForm Model="Input" method="post" OnValidSubmit="SaveReservation" FormName="add-reservation">
+			<ValidationSummary/>
+		</EditForm>
+	</div>
+</div>
+
+
+
+@code {
+
+	private SledgeInput Input { get; set; } = new SledgeInput();
+
+	private void SaveReservation()
+	{
+		
+	}
+
+
+	private class SledgeInput
+	{
+		
+	}
+}
