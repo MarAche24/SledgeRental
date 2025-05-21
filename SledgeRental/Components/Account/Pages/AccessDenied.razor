@@ -1,0 +1,14 @@
+﻿@page "/Account/AccessDenied"
+@inject NavigationManager NavigationManager
+
+@code{
+    protected override void OnInitialized()
+    {
+
+        // Throws an exception when beeing hit mutiple times while dbugging. Does not happen in release mode. Can be ignored.
+        // https://github.com/dotnet/aspnetcore/issues/28355#issuecomment-738156633
+        NavigationManager.NavigateTo("/Account/Login", forceLoad: true, replace: true);
+        base.OnInitialized();
+    }  
+}
+

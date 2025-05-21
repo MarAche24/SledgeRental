@@ -1,0 +1,107 @@
+﻿@page "/Sledges/Add"
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@using SledgeRental.Components.Account.Shared
+@using SledgeRental.Data
+@using SledgeRental.Data.Models
+
+@inject ApplicationDbContext dbContext
+@inject NavigationManager navigationManager
+
+@attribute [Authorize(Roles = "Staff")]
+
+<h2>Rodel hinzufügen</h2>
+
+<p class="alert-danger">@Message</p>
+
+<div class="row">
+    <div class="col-md-4">
+		<EditForm Model="Input" method="post" OnValidSubmit="SaveSledge" FormName="add-sledge">
+			<ValidationSummary/>
+			<div class="m-3">
+				<label for="sledge-number">Schlitten - Nummer</label>
+
+				<InputText @bind-Value="Input.SledgeNumber" class="form-control" aria-required="true" />
+				<ValidationMessage For="() => Input.SledgeNumber" class="text-danger" />
+			</div>
+
+			<div class="m-3">
+				<label for="sledge-kind" class="form-label">Rodelkategorie</label>
+				<InputSelect @bind-Value="Input.SledgeKindId" class="form-control">
+					@foreach (SledgeKind kind in this.AllSledgeKinds)
+					{
+						<option value="@kind.Id">@kind.Name</option>
+					}
+				</InputSelect>
+			</div>
+
+			<div class="m-3">
+				<label for="registrationdate">Tag der Anschaffung</label>
+				<InputDate id="registationdate" @bind-Value="Input.RegistrationDate" class="form-control"/>
+			</div>
+
+			<div class="m-3 float-end">
+				<button type="submit" class="btn btn-primary">Speichern</button>
+				<button type="button" onclick="@Cancel" class="btn btn-secondary">Abbrechen</button>
+			</div>
+		</EditForm>
+	</div>
+</div>
+
+
+@code {
+
+	private SledgeInput Input { get; set; } = new();
+
+	private List<SledgeKind> AllSledgeKinds { get; set; } = [];
+
+	private string Message { get; set; } = string.Empty;
+
+	protected override void OnInitialized()
+	{
+		base.OnInitialized();
+		this.AllSledgeKinds = dbContext.SledgeKinds.ToList();
+	}
+
+	private void Cancel()
+	{
+		navigationManager.NavigateTo("/Sledges");
+	}
+
+	private void SaveSledge()
+	{
+		this.Message = string.Empty;
+
+		bool idIsValid = AllSledgeKinds
+			.Select(k => k.Id)
+			.Contains(this.Input.SledgeKindId);
+
+		if (!idIsValid)
+		{
+			this.Message = "Rodel konnte nicht gespeichert werden. Schlittenkategorie ist ungültig";
+			return;
+		}
+
+		dbContext.Sledges.Add(new Sledge()
+		{
+			SledgeNumber = this.Input.SledgeNumber,
+			SledgeKindId = this.Input.SledgeKindId,
+			RegistrationDate = this.Input.RegistrationDate,
+		});
+
+		dbContext.SaveChanges();
+
+		// TODO: add success message in querystring?
+		navigationManager.NavigateTo("/Sledges");
+	}
+
+	private sealed class SledgeInput
+	{
+		[StringLength(3, MinimumLength = 2)]
+		public string SledgeNumber { get; set; } = string.Empty;
+
+		public int SledgeKindId { get; set; }
+
+		public DateOnly RegistrationDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
+	}
+}
