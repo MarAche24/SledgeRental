@@ -1,6 +1,8 @@
 ﻿@page "/Reservations"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
 @using SledgeRental.Data
+@using SledgeRental.Data.Models
 @using SledgeRental.Data.Models.Views
 
 @inject ApplicationDbContext dbContext
@@ -33,18 +35,77 @@
             }
         </table>
     </div>
+    <div class="col-md-3">
+        <table class="table table-bordered">
+            <tr>
+                <th text-center>Schlitten Kategorie</th>
+                <th text-center>Gesamtzeit</th>
+            </tr>
+            @foreach(SledgeTime sledgeTime in SledgeTimes)
+            {
+                <tr>
+                    <td>@sledgeTime.SledgeKindName</td>
+                    <td>@sledgeTime.TotalDuration</td>
+                </tr>
+            }
+        </table>
+    </div>
 </div>
+
 
 
 @code {
     private List<ReservationInfo> ReservationsList { get; set; } = [];
 
+    private List<SledgeTime> SledgeTimes { get; set; } = [];
 
     protected override void OnInitialized()
     {
         // TODO: Order by date then by time
         ReservationsList = dbContext.ReservationInfos.ToList();
 
+        LoadTotalTimes();
+
         base.OnInitialized();
+    }
+
+
+    /// <summary>
+    /// Loads Total time each SledgeKind was in a reservation. Loads those values into the SledgeTimes list.
+    /// </summary>
+    private void LoadTotalTimes()
+    {
+        List<SledgeKind> sledgeKinds = dbContext.SledgeKinds.ToList();
+
+        foreach (SledgeKind sledgKind in sledgeKinds)
+        {
+            List<Reservation> reservations = dbContext.Reservations
+                .Include(s => s.Sledge)
+                .Where(r => r.Sledge.SledgeKindId == sledgKind.Id)
+                .ToList();
+
+            TimeSpan totalTime = new TimeSpan();
+
+            foreach(Reservation reservation in reservations)
+            {
+                totalTime += reservation.EndTime - reservation.StartTime;
+            }
+
+            SledgeTimes.Add(new SledgeTime()
+            {
+                TotalDuration = totalTime,
+                SledgeKindName = sledgKind.Name
+            });
+        }
+    }
+
+    /// <summary>
+    /// Display model for the time a SledgeKind was reserved for
+    /// </summary>
+    private class SledgeTime
+    {
+        public string SledgeKindName { get; set; } = string.Empty;
+
+        public TimeSpan TotalDuration { get; set; }
     }
 }

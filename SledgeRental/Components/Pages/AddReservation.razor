@@ -1,18 +1,61 @@
-﻿@page "/Sledges/Add"
+﻿@page "/Reservations/Add"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
 @using SledgeRental.Data
+@using SledgeRental.Data.Models
+@using System.ComponentModel.DataAnnotations
 
 @inject ApplicationDbContext dbContext
 @inject NavigationManager navigationManager
+@inject IHttpContextAccessor httpContextAccessor
+@inject AuthenticationStateProvider authStateProvider
 
-@attribute [Authorize(Roles = "Staff")]
+@attribute [Authorize]
 
 <h3>Schlitten Reservieren</h3>
+
+
 
 <div class="row">
     <div class="col-md-4">
 		<EditForm Model="Input" method="post" OnValidSubmit="SaveReservation" FormName="add-reservation">
 			<ValidationSummary/>
+			@foreach (string message in ErrorMessages)
+			{
+				<p class="alert-danger">@message</p>
+			}
+
+
+			<div class="m-3">
+				<label for="reservation-date">Tag der Reservierung</label>
+				<InputDate id="reservation-date" @bind-Value="Input.ReservationDate" class="form-control" />
+			</div>
+
+			<div class="m-3">
+				<label for="start-time">Beginn</label>
+				<InputDate Type="InputDateType.Time" id="start-time" @bind-Value="Input.StartTime" class="form-control" />
+			</div>
+
+			<div class="m-3">
+				<label for="end-time">Ende</label>
+				<InputDate Type="InputDateType.Time" id="end-time" @bind-Value="Input.EndTime" class="form-control" />
+			</div>
+
+			<div class="m-3">
+				<label for="sledge-number">Schlitten</label>
+				<InputSelect @bind-Value="Input.SledgeId" class="form-control">
+					@foreach (Sledge sledge in this.AllSledges)
+					{
+						<option value="@sledge.Id">@sledge.SledgeNumber - @sledge.SledgeKind.Name</option>
+					}
+				</InputSelect>
+			</div>
+
+			<div class="m-3 float-end">
+				<button type="submit" class="btn btn-primary">Speichern</button>
+				<button type="button" onclick="@Cancel" class="btn btn-secondary">Abbrechen</button>
+			</div>
+
 		</EditForm>
 	</div>
 </div>
@@ -23,14 +66,124 @@
 
 	private SledgeInput Input { get; set; } = new SledgeInput();
 
-	private void SaveReservation()
+	private List<Sledge> AllSledges { get; set; } = [];
+
+	private List<string> ErrorMessages { get; set; } = [];
+
+	protected override void OnInitialized()
 	{
-		
+		AllSledges = dbContext.Sledges
+			.Include(s => s.SledgeKind)
+			.ToList();
+
+		base.OnInitialized();
+	}
+
+	private async Task SaveReservation()
+	{
+		ErrorMessages.Clear();
+
+		if (!this.InputIsValid())
+		{
+			return;
+		}
+
+		AuthenticationState authenticationState = await authStateProvider.GetAuthenticationStateAsync();
+		string? currentUserId = authenticationState.User.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value;
+
+		if (currentUserId == null)
+		{
+			// TODO current user cannot be found. Notify the user / logout.
+			ErrorMessages.Add("Reservierung fehlgeschlagen. Benutzer konnte nicht authentifiziert werden.");
+			return;
+		}
+
+
+		dbContext.Add(new Reservation()
+		{
+			SledgeId = Input.SledgeId,
+			Date = Input.ReservationDate,
+			StartTime = Input.StartTime,
+			EndTime = Input.EndTime,
+			CustomerId = currentUserId
+		});
+
+		dbContext.SaveChanges();
+
+		// TODO: add confirmation message
+		navigationManager.NavigateTo("/");
+	}
+
+	private void Cancel()
+	{
+		navigationManager.NavigateTo("/");
+	}
+
+	private bool InputIsValid()
+	{
+		this.ValidateReservationDate();
+		this.ValidateStartTime();
+		this.ValidateEndTime();
+		this.ValidateSledgeId();
+
+		return !ErrorMessages.Any();
+	}
+
+	private void ValidateReservationDate()
+	{
+		DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+
+		if (Input.ReservationDate < today)
+		{
+			this.ErrorMessages.Add("Reservierung sind nur nach dem heutigen Datum möglich");
+		}
+	}
+
+	private void ValidateStartTime()
+	{
+		DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+		if (Input.ReservationDate == today)
+		{
+			TimeOnly now = TimeOnly.FromDateTime(DateTime.Now);
+
+			if (Input.StartTime < now)
+			{
+				this.ErrorMessages.Add("Reservierung ist nur zu einem späteren Zeitpunkt möglich");
+			}
+		}
+	}
+
+	private void ValidateEndTime()
+	{
+		if (Input.StartTime >= Input.EndTime)
+		{
+			this.ErrorMessages.Add("Ungülige Eingabe. Start muss vor dem Ende der Reservierung sein");
+		}
+	}
+
+	private void ValidateSledgeId()
+	{
+		if (Input.SledgeId < 1)
+		{
+			this.ErrorMessages.Add("Ungültige Eingabe. Ausgewählter Schlitten existiert nicht.");
+			return;
+		}
+
+		if (!AllSledges.Select(s => s.Id).Contains(Input.SledgeId))
+		{
+			this.ErrorMessages.Add("Ausgewählter Schlitten konnte nicht gefunden werden.");
+		}
 	}
 
 
 	private class SledgeInput
 	{
-		
+		public DateOnly ReservationDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
+
+		public TimeOnly StartTime { get; set; }
+
+		public TimeOnly EndTime { get; set; }
+
+		public int SledgeId { get; set; }
 	}
 }

@@ -1,7 +1,15 @@
 ﻿@page "/"
+@using SledgeRental.Components.Account.Shared
 
 <PageTitle>Home</PageTitle>
+<AuthorizeView>
+    <Authorized>
+        <h1>Hallo!</h1>
 
-<h1>Hello, world!</h1>
+        Klicke auf eine option links im menü um zu starten!
 
-Welcome to your new app.
+    </Authorized>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+</AuthorizeView>
